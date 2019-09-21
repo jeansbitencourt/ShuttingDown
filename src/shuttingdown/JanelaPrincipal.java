@@ -24,15 +24,17 @@ public class JanelaPrincipal extends javax.swing.JFrame {
     private boolean flag;
     private Integer time;
     private Integer count;
+    private String operatingSystem;
 
     /**
      * Creates new form JanelaPrincipal
      */
     public JanelaPrincipal() {
         initComponents();
-        flag = false;
         ShuttingDownThread thread = new ShuttingDownThread();
         thread.start();
+        operatingSystem = System.getProperty("os.name");
+        flag = false;
         prog.setStringPainted(true);
         prog.setString("Aguardando...");
         this.setResizable(false);
@@ -41,28 +43,44 @@ public class JanelaPrincipal extends javax.swing.JFrame {
         Image iconeTitulo = Toolkit.getDefaultToolkit().getImage(url);
         this.setIconImage(iconeTitulo);
         this.setTitle("ShuttingDown Timer");
+        String[] options = null;
+        System.out.println(operatingSystem);
+        if("Linux".equals(operatingSystem.substring(0, 5)) || "Mac OS X".equals(operatingSystem.substring(0, 8))){
+            options = new String[] { "minutos", "horas" };
+        }else{
+            options = new String[] { "minutos", "horas", "segundos" };
+        }
+        cbTipo.setModel(new javax.swing.DefaultComboBoxModel<>(options));
     }
 
     public void exec(Integer time) throws IOException {
         String shutdownCommand;
-        String operatingSystem = System.getProperty("os.name");
-
         System.out.println(System.getProperty("os.name"));
-
         if ("Linux".equals(operatingSystem.substring(0, 5)) || "Mac OS X".equals(operatingSystem.substring(0, 8))) {
-            shutdownCommand = "shutdown -h " + time;
+            shutdownCommand = "shutdown -h " + (time / 60);
+            Runtime.getRuntime().exec(new String[]{ "/bin/sh", "-c", shutdownCommand });
         } else if ("Windows".equals(operatingSystem.substring(0, 7))) {
             shutdownCommand = "shutdown -s -t " + time;
+            Runtime.getRuntime().exec(shutdownCommand);
         } else {
             throw new RuntimeException("Unsupported operating system.");
         }
         System.out.println(shutdownCommand);
-
-        Runtime.getRuntime().exec(shutdownCommand);
     }
 
     public void stopExec() throws IOException {
-        Runtime.getRuntime().exec("shutdown -a");
+        String shutdownCancelCommand = "-";
+        System.out.println(System.getProperty("os.name"));
+        if ("Linux".equals(operatingSystem.substring(0, 5)) || "Mac OS X".equals(operatingSystem.substring(0, 8))) {
+            shutdownCancelCommand = "shutdown -c";
+            Runtime.getRuntime().exec(new String[]{ "/bin/sh", "-c", shutdownCancelCommand });         
+        } else if ("Windows".equals(operatingSystem.substring(0, 7))) {
+            shutdownCancelCommand = "shutdown -a";
+            Runtime.getRuntime().exec(shutdownCancelCommand);
+        } else {
+            throw new RuntimeException("Unsupported operating system.");
+        }
+        System.out.println(shutdownCancelCommand);     
     }
 
     public void resetTime() {
@@ -149,6 +167,11 @@ public class JanelaPrincipal extends javax.swing.JFrame {
         lbInfo = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         btStart.setText("Iniciar Contagem");
         btStart.addActionListener(new java.awt.event.ActionListener() {
@@ -260,6 +283,14 @@ public class JanelaPrincipal extends javax.swing.JFrame {
     private void cbTipoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTipoItemStateChanged
         atualizarTextos();
     }//GEN-LAST:event_cbTipoItemStateChanged
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        try {
+            stopExec();
+        } catch (IOException ex) {
+            Logger.getLogger(JanelaPrincipal.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_formWindowClosing
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
